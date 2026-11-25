@@ -13,7 +13,8 @@ if(j.code==="inactive"&&S.user){S.user=null;location.hash="home";render()} // �
 if(!r.ok){const err=new Error(j.error||"요청에 실패했어요. 서버가 켜져 있는지 확인해 주세요.");err.status=r.status;throw err}return j});
 
 // 서버에서 모집글·내 지원·받은 신청서를 다시 불러와요 (로그인/로그아웃이나 데이터가 바뀐 뒤 호출)
-function loadAll(){return Promise.all([api("/api/posts"),S.user?api("/api/my/apps"):[],S.user?api("/api/my/recv"):[]])
+function loadAll(){mpLoadProf(); // [마이페이지] 내 프로필도 같이 불러오기
+return Promise.all([api("/api/posts"),S.user?api("/api/my/apps"):[],S.user?api("/api/my/recv"):[]])
 .then(([ps,ap,rv])=>{TM.splice(0,TM.length,...ps);
 // 서버 상태 p(합격)·r(불합격)는 화면에서 '결과 확인 요망(c)'으로 보여요
 S.apps=ap.filter(a=>TM.some(t=>t.id===a.tid)).map(a=>a.st==="p"||a.st==="r"?{...a,st:"c",res:a.st==="p"?"합":"불"}:a);

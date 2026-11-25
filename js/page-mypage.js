@@ -27,18 +27,20 @@ function rvM(pid,n){const p=S.done.find(x=>x.id===pid);S.rate=5;openM(`<h3 style
 
 
 // ───────── 프로필 저장 / 불러오기 (API 연결 자리) ─────────
-// 지금은 화면(S.prof)에만 저장돼요. 서버 API가 생기면 아래 TODO 부분만 바꾸면 됨
+// 서버(/api/me/profile)에 저장하고 불러와서 새로고침해도 남아 있음
 // S.prof 모양: { aff: "소속", aw: ["수상내역"], car: ["경력·자격증"], pf: [{ t: "제목", u: "링크" }] }
 
-// 프로필 버튼(소속 저장, 수상·경력·포폴 추가/삭제)을 누를 때마다 불러.
+// 프로필 버튼을 누를 때마다 불러.
 function mpSaveProf(msg){
-  toast(msg);
-  // TODO: 서버에 저장하기 (PUT /api/me/profile)
-  // 힌트: api(주소, "PUT", 보낼데이터) 를 쓰고, 실패하면 .catch 로 에러 메시지를 toast 함.
+  api("/api/me/profile", "PUT", S.prof)   // 지금 프로필을 통째로 서버에 저장
+    .then(() => toast(msg))               // 성공하면 "추가했어요" 같은 메시지
+    .catch(e => toast(e.message));        // 실패하면 서버가 보낸 에러 메시지
 }
 
-// 로그인한 뒤 / 마이페이지에 들어올 때 내 프로필을 서버에서 가져오는 자리.
+// 로그인한 뒤 / 새로고침할 때 내 프로필을 서버에서 가져옴
 function mpLoadProf(){
-  // TODO: 서버에서 불러오기 (GET /api/me/profile)
-  // 힌트: 받아 온 값을 S.prof 에 넣고 render() 해서 화면을 다시 그림.
+  if(!S.user){S.prof={aff:"",aw:[],car:[],pf:[]};return}
+  api("/api/me/profile")                  // 서버에서 내 프로필 받아 오기
+    .then(p => { S.prof = p; render(); }) // 받은 걸 S.prof에 넣고 화면 다시 그리기
+    .catch(e => toast(e.message));
 }

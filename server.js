@@ -134,6 +134,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS team_chat_block ( -- 팀별 채팅 제한: �
 db.exec(`CREATE TABLE IF NOT EXISTS team_av (       -- 시간 조율: 이 사람은 d 날짜 h시(0~23)에 가능
   pid INTEGER, uid TEXT, d TEXT, h INTEGER, PRIMARY KEY (pid, uid, d, h)
 )`);
+db.exec(`CREATE TABLE IF NOT EXISTS profiles (      -- [마이페이지] 개인 프로필 (목록은 JSON 배열 글자로 저장)
+  uid TEXT PRIMARY KEY,
+  aff TEXT DEFAULT '',                  -- 소속
+  aw TEXT DEFAULT '[]',                 -- 수상내역: ["2025 교내 해커톤 대상"]
+  car TEXT DEFAULT '[]',                -- 경력·자격증: ["정보처리기사 (2025.06)"]
+  pf TEXT DEFAULT '[]',                 -- 포폴: [{"t":"제목","u":"https://..."}]
+  updated_at TEXT
+)`);
 
 // 이전 버전에서 신고로 '전체 채팅'이 정지된 회원은 신고가 일어난 팀에만 정지를 남기고 전체 정지는 풀어요
 for (const u of db.prepare("SELECT id FROM users WHERE chat_status='muted'").all()) {
@@ -169,6 +177,7 @@ function purgeUser(id) {
   db.prepare("UPDATE users SET name=?, email='', hash='', status='purged', reason=NULL, until=NULL WHERE id=?").run(GONE, id);
   db.prepare("UPDATE posts SET owner_name=? WHERE owner=?").run(GONE, id);
   db.prepare("UPDATE apps SET uname=? WHERE uid=?").run(GONE, id);
+  db.prepare("DELETE FROM profiles WHERE uid=?").run(id); // [마이페이지] 프로필도 파기
   db.prepare("UPDATE team_msgs SET uname=? WHERE uid=?").run(GONE, id);
   db.prepare("UPDATE team_nt SET uname=? WHERE uid=?").run(GONE, id);
   for (const p of db.prepare("SELECT id, mem FROM posts").all()) {
@@ -396,7 +405,7 @@ app.get("/api/my/apps", requireUser, (req, res) => {
 // 내 팀에 들어온 신청서 (대기 중인 것만)
 app.get("/api/my/recv", requireUser, (req, res) => {
   res.json(db.prepare("SELECT a.* FROM apps a JOIN posts p ON p.id=a.pid WHERE p.owner=? AND a.st='w' ORDER BY a.id")
-    .all(req.user.id).map(a => ({ aid: a.id, tid: a.pid, uid: a.uid, n: a.uname, role: a.role, intro: a.intro })));
+    .all(req.user.id).map(a => ({ aid: a.id, tid: a.pid, uid: a.uid, n: a.uname, role: a.role, intro: a.intro, ...profOf(a.uid) }))); // [마이페이지] 지원자 프로필도 같이
 });
 // 팀장이 합격/불합격 결정
 app.post("/api/apps/:id/decide", requireUser, (req, res) => {
@@ -423,6 +432,34 @@ app.post("/api/apps/:id/skip", requireUser, (req, res) => {
   if (!a || a.uid !== req.user.id || a.st !== "p") return res.status(404).json({ error: "불참여할 수 있는 지원이 아니에요." });
   db.prepare("UPDATE apps SET st='x', updated_at=? WHERE id=?").run(now(), a.id);
   res.json({ ok: true });
+});
+
+// ===== 마이페이지: 개인 프로필 =====
+const EMPTY_PROF = { aff: "", aw: [], car: [], pf: [] };
+const arr = s => { try { const v = JSON.parse(s || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
+// 이 회원의 프로필 (저장한 적 없으면 빈 프로필)
+function profOf(uid) {
+  const p = db.prepare("SELECT * FROM profiles WHERE uid=?").get(uid);
+  return p ? { aff: p.aff || "", aw: arr(p.aw), car: arr(p.car), pf: arr(p.pf) } : { ...EMPTY_PROF };
+}
+// 글자 목록 정리: 앞뒤 공백 빼고, 빈 칸 빼고, 길이·개수 제한
+const textList = (v, len = 100, max = 30) =>
+  (Array.isArray(v) ? v : []).map(x => String(x ?? "").trim().slice(0, len)).filter(Boolean).slice(0, max);
+
+// 내 프로필 불러오기
+app.get("/api/me/profile", requireUser, (req, res) => res.json(profOf(req.user.id)));
+
+// 내 프로필 저장 (보낸 내용으로 통째로 바꿔요)
+app.put("/api/me/profile", requireUser, (req, res) => {
+  const b = req.body || {};
+  const pf = (Array.isArray(b.pf) ? b.pf : [])
+    .map(p => ({ t: String(p?.t ?? "").trim().slice(0, 60), u: String(p?.u ?? "").trim().slice(0, 300) }))
+    .filter(p => p.t && /^https?:\/\//.test(p.u)).slice(0, 30);
+  const prof = { aff: String(b.aff ?? "").trim().slice(0, 60), aw: textList(b.aw), car: textList(b.car), pf };
+  db.prepare(`INSERT INTO profiles (uid,aff,aw,car,pf,updated_at) VALUES (?,?,?,?,?,?)
+    ON CONFLICT(uid) DO UPDATE SET aff=excluded.aff, aw=excluded.aw, car=excluded.car, pf=excluded.pf, updated_at=excluded.updated_at`)
+    .run(req.user.id, prof.aff, JSON.stringify(prof.aw), JSON.stringify(prof.car), JSON.stringify(prof.pf), now());
+  res.json({ ok: true, ...prof });
 });
 
 // ===== 신고 =====
