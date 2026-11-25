@@ -127,17 +127,19 @@ return tsend(b,`/${k}/${it.id}`,"PUT",body,RMN[k]+"을(를) 수정했어요.")}
 case"rmOk":return tsend(b,`/${d.k}/${r[d.k][+d.i].id}`,"DELETE",null,RMN[d.k]+"을(를) 삭제했어요.");
 case"evAdd":{const dt=$("#ed").value,t=$("#et").value.trim();if(!dt||!t)return toast("날짜와 일정 제목을 입력해 주세요.");S.sel=dt;return tsend(b,"/ev","POST",{d:dt,t,todo:$("#etd").checked},"일정을 추가했어요.")}
 case"todo":return tsend(null,`/ev/${r.ev[+d.i].id}/done`,"POST");
-case"affSave":S.prof.aff=$("#aff").value.trim();toast("소속을 저장했어요.");break;
-case"awAdd":{const v=$("#awi").value.trim();if(!v)return toast("수상내역을 입력해 주세요.");S.prof.aw.push(v);break}
-case"awDel":S.prof.aw.splice(+d.i,1);break;
-case"pfAdd":{const t=$("#pft").value.trim(),u=$("#pfu").value.trim();if(!t||!/^https?:\/\//.test(u))return toast("제목과 https:// 링크를 입력해 주세요.");S.prof.pf.push({t,u});break}
-case"pfDel":S.prof.pf.splice(+d.i,1);break;
+case"affSave":S.prof.aff=$("#aff").value.trim();mpSaveProf("소속을 저장했어요.");break;
+case"awAdd":{const v=$("#awi").value.trim();if(!v)return toast("수상내역을 입력해 주세요.");S.prof.aw.push(v);mpSaveProf("수상내역을 추가했어요.");break}
+case"awDel":S.prof.aw.splice(+d.i,1);mpSaveProf("수상내역을 삭제했어요.");break;
+case"carAdd":{const v=$("#cari").value.trim();if(!v)return toast("경력이나 자격증을 입력해 주세요.");S.prof.car.push(v);mpSaveProf("경력·자격증을 추가했어요.");break}
+case"carDel":S.prof.car.splice(+d.i,1);mpSaveProf("경력·자격증을 삭제했어요.");break;
+case"pfAdd":{const t=$("#pft").value.trim(),u=$("#pfu").value.trim();if(!t||!/^https?:\/\//.test(u))return toast("제목과 https:// 링크를 입력해 주세요.");S.prof.pf.push({t,u});mpSaveProf("포폴을 추가했어요.");break}
+case"pfDel":S.prof.pf.splice(+d.i,1);mpSaveProf("포폴을 삭제했어요.");break;
 case"skip":return openM(`<h3 style="margin:0 0 6px">불참여</h3><p class="m">"${E(TM.find(t=>t.id===+d.id).name)}" 팀에 합격했지만 참여하지 않을까요? 팀장에게 불참여가 전달되고 되돌릴 수 없어요.</p><div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="skipOk" data-id="${d.id}">불참여하기</button></div>`);
 case"skipOk":return send(b,`/api/apps/${myApp(+d.id).aid}/skip`,"POST",null,"불참여 처리했어요.");
 case"confirm":{const x=myApp(+d.id);return send(b,`/api/apps/${x.aid}/confirm`,"POST",null,x.res==="합"?"팀에 참여했어요. 팀채팅에서 만나요.":"결과를 확인했어요.")}
 case"pv":{const x=S.recv[+d.i],L=(a,f)=>a.length?a.map(f).join(""):`<p class="empty" style="padding:4px 0">없음</p>`;return openM(`<h3 style="margin:0 0 2px">${E(x.n)} <span class="rl">${E(x.role)} 지원</span></h3><p class="m" style="margin:0">${E(x.aff)}${x.rt?` · <span class="stars">★ ${x.rt.toFixed(1)}</span>`:" · 받은 후기 없음"}</p>
 <div class="sh">자기소개</div><p style="margin:2px 0">${E(x.intro)}</p>
-<div class="sh">경력</div>${L(x.car,c=>`<div class="it" style="padding:6px 0">${E(c)}</div>`)}
+<div class="sh">경력 · 자격증</div>${L(x.car,c=>`<div class="it" style="padding:6px 0">${E(c)}</div>`)}
 <div class="sh">수상내역</div>${L(x.aw,c=>`<div class="it" style="padding:6px 0">${E(c)}</div>`)}
 <div class="sh">포폴 / 작업물</div>${L(x.pf,p=>`<div class="it" style="padding:6px 0"><a class="red" href="${E(p.u)}" target="_blank" rel="noopener">${E(p.t)}</a></div>`)}
 <div class="row" style="justify-content:flex-end;margin-top:16px">${x.uid?`<button class="btn o" style="margin-right:auto" data-a="report" data-t="user" data-id="${E(x.uid)}" data-n="${E(x.n)}">회원 신고</button>`:""}<button class="btn o" data-a="close">닫기</button><button class="btn o" data-a="recv" data-i="${d.i}" data-v="0">불합격</button><button class="btn r" data-a="recv" data-i="${d.i}" data-v="1">합격</button></div>`)}

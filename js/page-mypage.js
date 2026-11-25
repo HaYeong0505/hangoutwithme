@@ -11,6 +11,7 @@ return `<div class="in"><h2 class="pt">마이페이지</h2><div class="two">
 <div class="box"><b style="font-size:18px">개인 프로필</b><p class="m" style="margin:2px 0 0">${E(u.name)} · ${E(u.id)} · ${E(u.email)}</p>
 <label for="aff">소속</label><div class="row" style="margin:0"><input id="aff" value="${E(P.aff)}" placeholder="예: 한국대학교 디자인학과"><button class="btn sm" data-a="affSave">저장</button></div>
 <div class="sh">수상내역</div>${P.aw.map((w,i)=>`<div class="it"><span>${E(w)}</span><button class="btn sm o" data-a="awDel" data-i="${i}">삭제</button></div>`).join("")||`<p class="empty" style="padding:6px 0">없음</p>`}<div class="row"><input id="awi" placeholder="예: 2025 교내 해커톤 대상"><button class="btn sm" data-a="awAdd">추가</button></div>
+<div class="sh">경력 · 자격증</div>${P.car.map((w,i)=>`<div class="it"><span>${E(w)}</span><button class="btn sm o" data-a="carDel" data-i="${i}">삭제</button></div>`).join("")||`<p class="empty" style="padding:6px 0">없음</p>`}<div class="row"><input id="cari" placeholder="예: 정보처리기사 (2025.06), ○○ 인턴 3개월"><button class="btn sm" data-a="carAdd">추가</button></div>
 <div class="sh">포폴 / 작업물</div>${P.pf.map((p,i)=>`<div class="it"><a href="${E(p.u)}" target="_blank" rel="noopener"><b>${E(p.t)}</b><span class="m">${E(p.u)}</span></a><button class="btn sm o" data-a="pfDel" data-i="${i}">삭제</button></div>`).join("")||`<p class="empty" style="padding:6px 0">없음</p>`}<div class="row"><input id="pft" placeholder="제목"><input id="pfu" placeholder="링크 (https://…)"><button class="btn sm" data-a="pfAdd">추가</button></div></div>
 <div class="box"><b style="font-size:18px">지원 현황</b>
 <div style="margin-top:12px;padding:8px 12px;background:var(--soft);border-radius:4px;font-weight:700">📤 내가 지원한 팀</div>${grp("a","현재 참여 중")}${grp("w","대기")}${grp("c","확인 요망")}
@@ -24,3 +25,20 @@ ${myT.length?"":`<p class="empty" style="padding:6px 0">만든 팀이 없어요.
 <div class="box" style="margin-top:20px"><b style="font-size:18px">받은 후기 / 별점</b> <span class="stars">${avg?"★ "+avg.toFixed(1):""}</span>${S.rv.map(r=>`<div class="it"><div><b>${E(r.w)} <span class="stars">${"★".repeat(r.s)}${"☆".repeat(5-r.s)}</span></b><span class="m">${E(r.t)}</span></div></div>`).join("")||`<p class="empty">받은 후기가 없어요.</p>`}</div></div>`}
 function rvM(pid,n){const p=S.done.find(x=>x.id===pid);S.rate=5;openM(`<h3 style="margin:0 0 2px">${E(n)}님에게 후기 남기기</h3><p class="m" style="margin:0">${E(p.name)} · ${E(p.comp)}</p><label>별점</label><div class="rate">${[1,2,3,4,5].map(k=>`<button type="button" data-a="rate" data-v="${k}" class="on" aria-label="${k}점">★</button>`).join("")}</div><label for="rvt">후기</label><textarea id="rvt" rows="4" placeholder="함께 작업하면서 좋았던 점을 적어 주세요."></textarea><div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="rvOk" data-p="${pid}" data-n="${E(n)}">등록하기</button></div>`)}
 
+
+// ───────── 프로필 저장 / 불러오기 (API 연결 자리) ─────────
+// 지금은 화면(S.prof)에만 저장돼요. 서버 API가 생기면 아래 TODO 부분만 바꾸면 됨
+// S.prof 모양: { aff: "소속", aw: ["수상내역"], car: ["경력·자격증"], pf: [{ t: "제목", u: "링크" }] }
+
+// 프로필 버튼(소속 저장, 수상·경력·포폴 추가/삭제)을 누를 때마다 불러.
+function mpSaveProf(msg){
+  toast(msg);
+  // TODO: 서버에 저장하기 (PUT /api/me/profile)
+  // 힌트: api(주소, "PUT", 보낼데이터) 를 쓰고, 실패하면 .catch 로 에러 메시지를 toast 함.
+}
+
+// 로그인한 뒤 / 마이페이지에 들어올 때 내 프로필을 서버에서 가져오는 자리.
+function mpLoadProf(){
+  // TODO: 서버에서 불러오기 (GET /api/me/profile)
+  // 힌트: 받아 온 값을 S.prof 에 넣고 render() 해서 화면을 다시 그림.
+}

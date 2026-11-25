@@ -14,7 +14,7 @@ const RPR=["스팸·홍보","욕설·비방","허위 정보","부적절한 내�
 const S={user:null,am:"in",f:0,tid:1,tt:"nt",lf:"전체",cm:{y:2026,m:10},mm:{y:2026,m:10},sel:"",rate:5,
 apps:[],recv:[],
 // 마이페이지(프로필·받은 후기·완료된 프로젝트·남긴 후기)는 빈 상태로 시작해요
-prof:{aff:"",aw:[],pf:[]},rv:[],done:[],gv:[]};
+prof:{aff:"",aw:[],car:[],pf:[]},rv:[],done:[],gv:[]};
 // 팀채팅 방(R[모집글 id]): 서버(/api/teams/:id)에서 불러와요. 아직 안 불러왔으면 빈 방을 돌려주고 불러오기를 시작해요
 const R={},EMPTY_ROOM={nt:[],msgs:[],lib:[],vt:[],ev:[],av:[],loading:1};
 const room=t=>{if(!R[t]&&S.user)loadRoom(t);return R[t]||EMPTY_ROOM};
