@@ -1,0 +1,19 @@
+{
+  "name": "ws_node",
+  "version": "1.0.0",
+  "description": "행아웃윗미 - 공모전 팀원 모집 학교 프로젝트",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^13.2.0",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0"
+  }
+}
