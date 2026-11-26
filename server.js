@@ -96,7 +96,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS reports (
   status TEXT DEFAULT 'open',           -- open 접수 | done 처리 완료 | rejected 반려
   note TEXT, created_at TEXT, handled_at TEXT
 )`);
-addCol("reports", "snap", "TEXT"); // 채팅 신고: 신고 당시 메시지 사본(JSON) — 나중에 메시지가 지워져도 관리자가 확인할 수 있게
+addCol("reports", "snap", "TEXT");
+addCol("posts", "descr", "TEXT DEFAULT ''");           // [게시판] 팀 설명 (모집글 상세에 보여요)
+addCol("apps", "share_prof", "INTEGER DEFAULT 1");     // [게시판] 지원할 때 '내 프로필도 함께 보내기'를 골랐는지 // 채팅 신고: 신고 당시 메시지 사본(JSON) — 나중에 메시지가 지워져도 관리자가 확인할 수 있게
 
 // ----- 팀채팅 (모집글 id = 팀 id) -----
 db.exec(`CREATE TABLE IF NOT EXISTS files (
@@ -333,6 +335,7 @@ function postOut(p, u) {
   const mem = JSON.parse(p.mem), mine = !!u && p.owner === u.id;
   return {
     id: p.id, owner: p.owner, ownerName: p.owner_name, ctitle: p.ctitle, name: p.name, lv: p.lv, cond: p.cond,
+    desc: p.descr || "", // [게시판] 팀 설명
     max: p.max, need: JSON.parse(p.need), mem: mem.map(x => `${x.n}(${x.r})`), status: p.status,
     blinded: !!p.blinded, blindReason: mine || (u && u.role === "admin") ? p.blind_reason : undefined, mine,
   };
@@ -347,7 +350,7 @@ app.get("/api/posts", (req, res) => {
 function readPostBody(b) {
   const need = Array.isArray(b.need) ? b.need.map(s => String(s).trim()).filter(Boolean) : [];
   const v = { ctitle: String(b.ctitle || "").trim(), name: String(b.name || "").trim(), cond: String(b.cond || "").trim(),
-    lv: +b.lv, max: Math.round(+b.max), need };
+    lv: +b.lv, max: Math.round(+b.max), need, desc: String(b.desc || "").trim().slice(0, 1000) }; // desc: [게시판] 팀 설명 (선택)
   if (!v.ctitle || !v.name || !v.cond || !need.length) return { error: "공모전, 팀명, 모집 조건, 모집 직무를 모두 입력해 주세요." };
   if (![1, 2, 3].includes(v.lv)) return { error: "참여 수준이 올바르지 않아요." };
   if (!(v.max >= 2 && v.max <= 10)) return { error: "최대 인원은 2~10명으로 정해 주세요." };
@@ -356,9 +359,9 @@ function readPostBody(b) {
 app.post("/api/posts", requireUser, (req, res) => {
   const { v, error } = readPostBody(req.body || {});
   if (error) return res.status(400).json({ error });
-  const r = db.prepare("INSERT INTO posts (owner,owner_name,ctitle,name,lv,cond,max,need,mem,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)")
+  const r = db.prepare("INSERT INTO posts (owner,owner_name,ctitle,name,lv,cond,max,need,mem,descr,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
     .run(req.user.id, req.user.name, v.ctitle, v.name, v.lv, v.cond, v.max, JSON.stringify(v.need),
-      JSON.stringify([{ uid: req.user.id, n: req.user.name, r: "팀장" }]), now());
+      JSON.stringify([{ uid: req.user.id, n: req.user.name, r: "팀장" }]), v.desc, now());
   res.json(postOut(findPost(r.lastInsertRowid), req.user));
 });
 app.put("/api/posts/:id", requireUser, (req, res) => {
@@ -367,8 +370,8 @@ app.put("/api/posts/:id", requireUser, (req, res) => {
   const { v, error } = readPostBody(req.body || {});
   if (error) return res.status(400).json({ error });
   const max = Math.max(v.max, JSON.parse(p.mem).length);
-  db.prepare("UPDATE posts SET ctitle=?, name=?, lv=?, cond=?, max=?, need=? WHERE id=?")
-    .run(v.ctitle, v.name, v.lv, v.cond, max, JSON.stringify(v.need), p.id);
+  db.prepare("UPDATE posts SET ctitle=?, name=?, lv=?, cond=?, max=?, need=?, descr=? WHERE id=?")
+    .run(v.ctitle, v.name, v.lv, v.cond, max, JSON.stringify(v.need), v.desc, p.id);
   res.json(postOut(findPost(p.id), req.user));
 });
 app.delete("/api/posts/:id", requireUser, (req, res) => {
@@ -393,8 +396,18 @@ app.post("/api/posts/:id/apply", requireUser, (req, res) => {
     return res.status(409).json({ error: "이미 지원한 팀이에요." });
   const role = String((req.body || {}).role || "");
   if (!JSON.parse(p.need).includes(role)) return res.status(400).json({ error: "모집 중인 직무를 골라 주세요." });
-  db.prepare("INSERT INTO apps (pid,uid,uname,role,intro,st,created_at,updated_at) VALUES (?,?,?,?,?, 'w',?,?)")
-    .run(p.id, req.user.id, req.user.name, role, String(req.body.intro || "").trim(), now(), now());
+  // [게시판] 자기소개서 10~500자, 프로필 함께 보내기 여부(share: 기본 보냄)
+  const intro = String(req.body.intro || "").trim();
+  if (intro.length < 10 || intro.length > 500) return res.status(400).json({ error: "자기소개서는 10자 이상 500자 이하로 작성해 주세요." });
+  db.prepare("INSERT INTO apps (pid,uid,uname,role,intro,share_prof,st,created_at,updated_at) VALUES (?,?,?,?,?,?, 'w',?,?)")
+    .run(p.id, req.user.id, req.user.name, role, intro, req.body.share === false ? 0 : 1, now(), now());
+  res.json({ ok: true });
+});
+// [게시판] 지원 취소: 팀장이 아직 결정하지 않은(대기 중) 내 지원만 취소할 수 있어요
+app.post("/api/apps/:id/cancel", requireUser, (req, res) => {
+  const a = findApp(+req.params.id);
+  if (!a || a.uid !== req.user.id || a.st !== "w") return res.status(404).json({ error: "취소할 수 있는 지원이 아니에요. (팀장이 이미 결정했을 수 있어요)" });
+  db.prepare("UPDATE apps SET st='x', updated_at=? WHERE id=?").run(now(), a.id);
   res.json({ ok: true });
 });
 // 내가 지원한 목록
@@ -405,7 +418,8 @@ app.get("/api/my/apps", requireUser, (req, res) => {
 // 내 팀에 들어온 신청서 (대기 중인 것만)
 app.get("/api/my/recv", requireUser, (req, res) => {
   res.json(db.prepare("SELECT a.* FROM apps a JOIN posts p ON p.id=a.pid WHERE p.owner=? AND a.st='w' ORDER BY a.id")
-    .all(req.user.id).map(a => ({ aid: a.id, tid: a.pid, uid: a.uid, n: a.uname, role: a.role, intro: a.intro, ...profOf(a.uid) }))); // [마이페이지] 지원자 프로필도 같이
+    .all(req.user.id).map(a => ({ aid: a.id, tid: a.pid, uid: a.uid, n: a.uname, role: a.role, intro: a.intro,
+      ...(a.share_prof === 0 ? { ...EMPTY_PROF, hidden: true } : profOf(a.uid)) }))); // [마이페이지] 지원자 프로필도 같이 ([게시판] 지원자가 함께 보내기를 끈 경우 빼고)
 });
 // 팀장이 합격/불합격 결정
 app.post("/api/apps/:id/decide", requireUser, (req, res) => {

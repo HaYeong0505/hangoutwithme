@@ -115,7 +115,7 @@ button {
 .menu {
   display:flex;
   flex:1;
-  just수저ify-content:center;
+  justify-content:center;
   overflow-x:auto;
 }
 .menu a {
@@ -782,4 +782,122 @@ footer {
     right:0;
     transform:none;
   }
+}
+
+/* ───────── 게시판 상세 · 주요공모전 (게시판/주요공모전 파트) ───────── */
+.bc {
+  margin:26px 0 0;
+  font-size:13px;
+  color:var(--mute);
+}
+.bc a:hover {
+  color:var(--red);
+}
+.dh {
+  padding:4px 0 18px;
+  border-bottom:2px solid var(--ink);
+  margin-bottom:20px;
+}
+.dh a.m:hover {
+  color:var(--red);
+}
+.dv {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 320px;
+  gap:20px;
+  align-items:start;
+}
+@media(max-width:860px) {
+  .dv {
+    grid-template-columns:1fr;
+  }
+}
+.side {
+  position:sticky;
+  top:calc(env(safe-area-inset-top,0px) + 90px);
+}
+h3.bh {
+  margin:0 0 10px;
+  font-size:17px;
+  padding-left:10px;
+  border-left:4px solid var(--red);
+  line-height:1.2;
+}
+.ib {
+  display:grid;
+  grid-template-columns:80px 1fr;
+  gap:8px 12px;
+  margin:14px 0 0;
+  font-size:14px;
+}
+.ib dt {
+  color:var(--mute);
+}
+.ib dd {
+  margin:0;
+}
+button.rl {
+  background:none;
+  color:var(--ink);
+  cursor:pointer;
+}
+button.rl.rb:hover:not(:disabled) {
+  border-color:var(--red);
+  color:var(--red);
+}
+.cnt {
+  text-align:right;
+  margin:4px 0 0;
+}
+.cb {
+  position:relative;
+  border-radius:6px;
+  color:#fff;
+  padding:30px 30px 26px;
+  margin-top:12px;
+  overflow:hidden;
+}
+.cb::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(0,0,0,.25),transparent 70%);
+  pointer-events:none;
+}
+.cb>* {
+  position:relative;
+  z-index:1;
+}
+.cb h2 {
+  margin:4px 0 2px;
+  font-size:32px;
+  font-weight:900;
+  letter-spacing:-1px;
+  line-height:1.25;
+}
+@media(max-width:700px) {
+  .cb h2 {
+    font-size:24px;
+  }
+}
+.rr {
+  width:100%;
+  background:none;
+  border:0;
+  border-bottom:1px solid var(--line);
+  color:var(--ink);
+  text-align:left;
+  padding:10px 8px;
+  border-radius:4px;
+}
+.rr:hover,
+.rr.on {
+  background:var(--soft);
+}
+.rr.on .rl {
+  border-color:var(--red);
+  color:var(--red);
+}
+.card h3 a:hover {
+  color:var(--red);
 }

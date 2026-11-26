@@ -3,7 +3,12 @@
 function openM(h,w){$("#bx").innerHTML=h;$("#bx").style.maxWidth=w||"";$("#md").classList.add("on")}const closeM=()=>$("#md").classList.remove("on");
 function authM(){const up=S.am==="up";openM(`<div class="tabs" style="margin:0 0 8px"><button class="${up?"":"on"}" data-a="am" data-v="in">로그인</button><button class="${up?"on":""}" data-a="am" data-v="up">회원가입</button></div>${up?`<label for="ae">이메일</label><input id="ae" type="email"><label for="an">이름</label><input id="an">`:""}<label for="aid">ID</label><input id="aid"><label for="apw">비밀번호</label><input id="apw" type="password">
 <div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="authOk">${up?"가입하기":"로그인"}</button></div>`)}
-function applyM(id){const t=TM.find(x=>x.id===id);openM(`<h3 style="margin:0 0 2px">${E(t.name)}</h3><p class="m" style="margin:0">${LV[t.lv]} · ${E(t.cond)}</p><label for="ar">희망 직무</label><select id="ar">${t.need.map(r=>`<option>${E(r)}</option>`).join("")}</select><label for="ai">자기소개</label><textarea id="ai" rows="4" placeholder="경험과 맡고 싶은 역할을 적어 주세요."></textarea><div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="applyOk" data-id="${id}">지원하기</button></div>`)}
+// [게시판 파트] 지원 모달: 희망 직무 + 자기소개서 (r = 상세 화면에서 누른 직무를 미리 선택)
+function applyM(id,r){const t=TM.find(x=>x.id===id),c=ctOf(t);openM(`<p class="m" style="margin:0">${E(c.t)}</p><h3 style="margin:0 0 2px">${E(t.name)} 지원하기</h3><p class="m" style="margin:0"><span class="lv l${t.lv}">${LV[t.lv]}</span> ${E(t.cond)}</p>
+<label for="ar">희망 직무</label><select id="ar">${t.need.map(x=>`<option ${x===r?"selected":""}>${E(x)}</option>`).join("")}</select>
+<label for="ai">자기소개서</label><textarea id="ai" rows="7" maxlength="500" placeholder="관련 경험, 맡고 싶은 역할, 참여 가능한 시간 등을 적어 주세요. (10자 이상)"></textarea><p class="m cnt"><span id="aic">0</span> / 500자</p>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:4px"><input type="checkbox" id="apf" checked style="margin:0;width:auto">내 프로필(소속 · 경력·자격증 · 수상내역 · 포폴)도 함께 보내기</label>
+<div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="applyOk" data-id="${id}">지원하기</button></div>`,"560px");$("#ai").focus()}
 
 // 서버 API 호출 도우미: 실패하면 서버가 보낸 error 메시지로 예외를 던져요
 const api=(url,method="GET",body)=>fetch(url,{method,headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined})
@@ -15,7 +20,7 @@ if(!r.ok){const err=new Error(j.error||"요청에 실패했어요. 서버가 켜
 // 서버에서 모집글·내 지원·받은 신청서를 다시 불러와요 (로그인/로그아웃이나 데이터가 바뀐 뒤 호출)
 function loadAll(){mpLoadProf(); // [마이페이지] 내 프로필도 같이 불러오기
 return Promise.all([api("/api/posts"),S.user?api("/api/my/apps"):[],S.user?api("/api/my/recv"):[]])
-.then(([ps,ap,rv])=>{TM.splice(0,TM.length,...ps);
+.then(([ps,ap,rv])=>{TM.splice(0,TM.length,...ps);TM.forEach(t=>{t.cid=cidOf(t)}); // [게시판·주요공모전] 공모전 번호(cid) 연결
 // 서버 상태 p(합격)·r(불합격)는 화면에서 '결과 확인 요망(c)'으로 보여요
 S.apps=ap.filter(a=>TM.some(t=>t.id===a.tid)).map(a=>a.st==="p"||a.st==="r"?{...a,st:"c",res:a.st==="p"?"합":"불"}:a);
 S.recv=rv.map(r=>({aff:"",car:[],aw:[],pf:[],rt:0,...r}));render()})
@@ -67,15 +72,26 @@ case"quitOk":{const pw=$("#qpw").value;if(!pw)return toast("비밀번호를 입�
 api("/api/me","DELETE",{pw}).then(()=>{S.user=null;S.apps=[];S.recv=[];closeM();location.hash="home";toast("회원탈퇴가 완료됐어요.");loadAll()}).catch(e=>{b.disabled=false;toast(e.message)});
 return}
 case"close":return closeM();
-case"apply":if(!S.user){toast("로그인이 필요해요.");return authM()}return applyM(+d.id);
-case"applyOk":return send(b,`/api/posts/${+d.id}/apply`,"POST",{role:$("#ar").value,intro:$("#ai").value.trim()},"지원했어요. 마이페이지에서 현황을 확인하세요.");
+case"apply":if(!S.user){toast("로그인이 필요해요.");return authM()}return applyM(+d.id,d.r);
+case"applyOk":{const intro=$("#ai").value.trim();if(intro.length<10)return toast("자기소개서를 10자 이상 작성해 주세요.");if(myApp(+d.id))return toast("이미 지원한 팀이에요.");
+return send(b,`/api/posts/${+d.id}/apply`,"POST",{role:$("#ar").value,intro,share:$("#apf").checked},"지원했어요. 마이페이지에서 현황을 확인하세요.")}
+// [게시판] 지원 취소 (대기 중일 때만)
+case"cancelApp":return openM(`<h3 style="margin:0 0 6px">지원 취소</h3><p class="m">"${E(TM.find(t=>t.id===+d.id).name)}" 팀 지원을 취소할까요? 작성한 자기소개서도 함께 지워져요.</p><div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">닫기</button><button class="btn r" data-a="cancelOk" data-id="${d.id}">지원 취소</button></div>`);
+case"cancelOk":{const x=myApp(+d.id);if(!x)return closeM();return send(b,`/api/apps/${x.aid}/cancel`,"POST",null,"지원을 취소했어요.")}
+// [게시판] 공모전 필터·검색 / [주요공모전] 직군 필터 · 이 공모전으로 팀 만들기
+case"bsearch":S.bq=$("#bq").value.trim();break;
+case"bclr":S.bq="";S.bc=0;break;
+case"cr":S.cr=d.v;break;
+case"ctr":S.ctr=d.v;break;
+case"mkTeam":{const c=C.find(x=>x.id===+d.id);S.edit=0;S.pre=c.t;if(!S.user)toast("로그인 후 모집글을 작성할 수 있어요.");location.hash="recruit";return}
 case"recruitOk":{const ctitle=$("#rcid").value.trim();if(!ctitle)return toast("대상 공모전을 입력해 주세요.");
-const body={ctitle,name:$("#rname").value.trim(),lv:+$("#rlv").value,max:Math.max(2,+$("#rmax").value||4),cond:$("#rcond").value.trim(),need:$("#rneed").value.split(",").map(x=>x.trim()).filter(Boolean)};
+const body={ctitle,name:$("#rname").value.trim(),lv:+$("#rlv").value,max:Math.max(2,+$("#rmax").value||4),cond:$("#rcond").value.trim(),desc:$("#rdesc").value.trim(),need:$("#rneed").value.split(",").map(x=>x.trim()).filter(Boolean)};
 if(!body.name||!body.cond||!body.need.length)return toast("팀명, 모집 조건, 모집 직무를 모두 입력해 주세요.");
-const ed=S.edit;return send(b,ed?`/api/posts/${ed}`:"/api/posts",ed?"PUT":"POST",body,ed?"모집글을 수정했어요.":"모집글이 등록됐어요.",()=>{S.edit=0;location.hash="board"})}
+// 등록·수정 후에는 그 모집글 상세로 이동해요
+const ed=S.edit;return send(b,ed?`/api/posts/${ed}`:"/api/posts",ed?"PUT":"POST",body,ed?"모집글을 수정했어요.":"모집글이 등록됐어요.",j=>{S.edit=0;S.pre="";location.hash="post/"+j.id})}
 case"edit":S.edit=+d.id;if(location.hash==="#recruit")break;location.hash="recruit";return;
 case"del":{const t=TM.find(x=>x.id===+d.id);return openM(`<h3 style="margin:0 0 6px">모집글 삭제</h3><p class="m">"${E(t.name)}" 모집글을 삭제할까요? 삭제하면 되돌릴 수 없어요.</p><div class="row" style="justify-content:flex-end"><button class="btn o" data-a="close">취소</button><button class="btn r" data-a="delOk" data-id="${t.id}">삭제하기</button></div>`)}
-case"delOk":return send(b,`/api/posts/${+d.id}`,"DELETE",null,"모집글을 삭제했어요.");
+case"delOk":return send(b,`/api/posts/${+d.id}`,"DELETE",null,"모집글을 삭제했어요.",()=>{if(location.hash.startsWith("#post/"))location.hash="board"});
 // 신고: 모집글(data-t=post) 또는 회원(data-t=user)
 case"report":{if(!S.user){toast("로그인이 필요해요.");return authM()}const t=d.t==="post"?TM.find(x=>x.id===+d.id):null;return reportM(d.t,d.id,t?t.name:d.n||d.id)}
 case"reportOk":return send(b,"/api/reports","POST",{ttype:d.t,tid:d.id,reason:$("#rpr").value,detail:$("#rpd").value},"신고가 접수됐어요. 관리자가 확인할게요.");
@@ -139,7 +155,7 @@ case"skip":return openM(`<h3 style="margin:0 0 6px">불참여</h3><p class="m">"
 case"skipOk":return send(b,`/api/apps/${myApp(+d.id).aid}/skip`,"POST",null,"불참여 처리했어요.");
 case"confirm":{const x=myApp(+d.id);return send(b,`/api/apps/${x.aid}/confirm`,"POST",null,x.res==="합"?"팀에 참여했어요. 팀채팅에서 만나요.":"결과를 확인했어요.")}
 case"pv":{const x=S.recv[+d.i],L=(a,f)=>a.length?a.map(f).join(""):`<p class="empty" style="padding:4px 0">없음</p>`;return openM(`<h3 style="margin:0 0 2px">${E(x.n)} <span class="rl">${E(x.role)} 지원</span></h3><p class="m" style="margin:0">${E(x.aff)}${x.rt?` · <span class="stars">★ ${x.rt.toFixed(1)}</span>`:" · 받은 후기 없음"}</p>
-<div class="sh">자기소개</div><p style="margin:2px 0">${E(x.intro)}</p>
+<div class="sh">자기소개</div><p style="margin:2px 0">${E(x.intro)}</p>${x.hidden?`<p class="m" style="margin:10px 0 0;padding:8px 12px;background:var(--soft);border-radius:4px">지원자가 프로필(소속 · 경력 · 수상 · 포폴)을 함께 보내지 않았어요.</p>`:""}
 <div class="sh">경력 · 자격증</div>${L(x.car,c=>`<div class="it" style="padding:6px 0">${E(c)}</div>`)}
 <div class="sh">수상내역</div>${L(x.aw,c=>`<div class="it" style="padding:6px 0">${E(c)}</div>`)}
 <div class="sh">포폴 / 작업물</div>${L(x.pf,p=>`<div class="it" style="padding:6px 0"><a class="red" href="${E(p.u)}" target="_blank" rel="noopener">${E(p.t)}</a></div>`)}
