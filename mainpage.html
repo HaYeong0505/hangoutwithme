@@ -1,0 +1,137 @@
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <header class="header">
+      <a class="logo" href="#top">행아웃윗미</a>
+
+      <nav class="nav" aria-label="주요 메뉴">
+        <ul>
+          <li><a href="#board">게시판</a></li>
+          <li><a href="#contests">주요공모전</a></li>
+          <li><a href="#team">팀채팅</a></li>
+          <li><a href="#mypage">마이페이지</a></li>
+        </ul>
+      </nav>
+
+      <!-- 로그인 전 -->
+      <div class="auth">
+        <a class="btn" href="#login">로그인</a>
+        <a class="btn" href="signup">회원가입</a>
+      </div>
+
+      <!-- 로그인 후 (나중에 JS/PHP로 위 auth와 교체) -->
+      <!--
+      <div class="auth">
+        <span class="user-name">OOO님</span>
+        <a class="btn" href="logout.php">로그아웃</a>
+        <a class="btn" href="withdraw.php">탈퇴</a>
+      </div>
+      -->
+    </header>
+
+    <main id="top">
+      <!-- ========== 소개 ========== -->
+      <section class="hero">
+        <h1>나에게 딱 맞는 팀원, 내가 고르는 팀</h1>
+
+        <p>
+          모집글마다 초급, 중급 고급 단계와 분야 태그가 표시됩니다.
+          나에게 완벽한 팀에 지원해 보세요.
+        </p>
+
+        <a class="btn" href="#board">모집글 보러가기</a>
+        <a class="btn" href="signup">회원가입</a>
+      </section>
+
+      <!-- ===== 주요 공모전 ===== -->
+      <section id="contests" class="section contests">
+        <div class="section-head">
+          <a href="contest.html">주요 공모전</a>
+        </div>
+
+        <div class="card-list">
+          <article class="card contest-card">
+            <span class="dday" data-deadline="2027-01-07"></span>
+
+            <h3>전국 대학생 앱 아이디어 공모전</h3>
+
+            <p class="desc">
+              학교에서의 문제를 해결하는 아이디어 공모전.
+            </p>
+
+            <ul class="tags">
+              <li class="tag role">기획</li>
+              <li class="tag role">디자인</li>
+              <li class="tag role">개발</li>
+            </ul>
+          </article>
+
+          <article class="card contest-card">
+            <span class="dday" data-deadline="2027-01-30"></span>
+
+            <h3>공공데이터 활용 창업 경진대회</h3>
+
+            <p class="desc">
+              공공데이터를 활용한 창업 경진 대회
+            </p>
+
+            <ul class="tags">
+              <li class="tag role">디자인</li>
+              <li class="tag role">기획</li>
+              <li class="tag role">개발</li>
+              <li class="tag role">데이터</li>
+            </ul>
+          </article>
+        </div>
+
+        <p>어떤 공모전들이 있는지 살펴보세요</p>
+      </section>
+
+      <!-- ==== 지원 가능 공모전 ==== -->
+      <section id="board" class="section board">
+        <a class="meta" href="board.html?contest=2">게시판</a>
+
+        <div class="post-card">
+          <ul>
+            <li>
+              <a class="team-link" href="post.html?id=1">
+                <h5>즐겁게 참여할 팀 찾아요</h5>
+
+                <ul>
+                  <li class="tag level high">초급</li>
+                  <li class="tag role">개발</li>
+                </ul>
+
+                <span class="people-count">3/5</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="team-link" href="post.html?id=2">
+                <h5>베테랑 팀장과 함께할 수 있는 팀</h5>
+
+                <ul>
+                  <li class="tag level high">고급</li>
+                  <li class="tag role">개발</li>
+                  <li class="tag role">디자인</li>
+                </ul>
+
+                <span class="people-count">2/5</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
